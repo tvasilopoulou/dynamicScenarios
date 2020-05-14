@@ -36,6 +36,7 @@ public class CameraScript : MonoBehaviour
     // public Button fullscreen_button;
     // public Button exit_fullscreen_button;
     public Button closeButton;
+    // public Button closeButton;
     public Button play_button;
     public Button pause_button;
     public Button scan_area;
@@ -51,6 +52,8 @@ public class CameraScript : MonoBehaviour
     private float limit_zoom = 2.0f;
     private float zoom_in = 1, zoom_out = 1;
     public Slider zoom;
+
+    public GameObject loadedObj;
 
     //private float add_step;
     private Coroutine any_coroutine;
@@ -110,21 +113,13 @@ public class CameraScript : MonoBehaviour
         //barCodeManager = new BarCodeManager(OnResultFound);
 
         zoom_in = zoom_out = 1;
-        // exit_fullscreen_button.onClick.AddListener(delegate
-        // {
-        //     this.exit_fullscreen();
-        // });
-
-        // fullscreen_button.onClick.AddListener(delegate
-        // {
-            
-        //     this.enter_fullscreen();
-        // });
-
+        
         closeButton.onClick.AddListener(delegate
         {
             this.close();
         });
+
+
         play_button.onClick.AddListener(delegate
         {
 
@@ -190,50 +185,6 @@ public class CameraScript : MonoBehaviour
     }
 
     
-    // public void OnResultFound(Result obj)
-    // {
-    //     Debug.Log("OnResultScanned");
-    //     downloading = true;
-    //     cameraInitialized = false;
-    //     if (obj != null)
-    //     {
-    //         ContentType.CONTENT_TYPE type = ContentType.AssessTypeFromUrl(obj.Text);
-    //         if (type == ContentType.CONTENT_TYPE.UNIDENTIFIED)
-    //         {
-    //             //Make the assumption that it is an image?
-    //             //We could download and then check its type
-    //             //We could make extra requests to find out
-    //             // TODO
-    //             UrlImageDownloadRoutineHandler unkbownType = new UrlImageDownloadRoutineHandler(obj.Text);
-    //             StartCoroutine(unkbownType.DownLoadHeaders());
-    //             unkbownType.OnHeadersDownload += () => { type = ContentType.AssessTypeFromHeaders(unkbownType.Headers); };
-    //         }
-    //         if (type == ContentType.CONTENT_TYPE.IMAGE)
-    //         {
-    //             UrlImageDownloadRoutineHandler downloadImageRoutine = new UrlImageDownloadRoutineHandler(obj.Text);
-    //             StartCoroutine(downloadImageRoutine.DownloadImage());
-    //             downloadImageRoutine.Downloaded += (Sprite s) => { this.projectImage(s); };
-
-    //         }
-    //         if (type == ContentType.CONTENT_TYPE.VIDEO)
-    //         {
-    //             //download will start on VideoRoutine
-    //             //download will start here FOR STATUS MESSAGE
-    //             //ProcessingMsg.SetActive(true);
-    //             //videoCache.AddWithoutContent(obj.Text);
-    //             StartCoroutine(VideoRoutine(obj.Text, VideoEndReached, VideoPrepareCompleted));
-    //         }
-    //         if (type == ContentType.CONTENT_TYPE.UNIDENTIFIED)
-    //         {
-    //             //If still UNIDENTIFIED then
-    //             Debug.LogError("UNIDENTIFIED CONTENT TYPE found...");
-    //             throw new Exception("UNIDENTIFIED TYPE");
-    //         }
-    //     }
-    //     cameraInitialized = true;
-    //     downloading = false;
-    // }
-    
 
     private void projectImage(Sprite s)
     {
@@ -264,10 +215,6 @@ public class CameraScript : MonoBehaviour
              www.LoadImageIntoTexture(texture2D);
          }
      }
-
-    // public void OnGUI() {
-    //     GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texture2D);
-    // }
 
 
     public void GetVideo(string url){
@@ -340,44 +287,7 @@ public class CameraScript : MonoBehaviour
         }
         return -1;
     }
-    /*
-    void OnTrackablesUpdated()
-    {
-        if (cameraInitialized && !downloading && !decoding)
-        {
-            Image cameraFrame = null;
-            try
-            {
-                if (counter % 20 == 0)
-                {
-                    decoding = true;
-                    cameraFrame = CameraDevice.Instance.GetCameraImage(PIXEL_FORMAT.GRAYSCALE);
-                }
-                counter++;
-            }
-            catch (Exception e)
-            {
-                Debug.Log("Failed to get camera frame");
-                Debug.LogError(e.Message);
-            }
-            if (cameraFrame == null)
-            {
-                return;
-            }
-            else if (cameraFrame.BufferWidth > 0 && cameraFrame.BufferHeight > 0)
-            {
-                //Debug.Log(" Decode Frame ");
-                barCodeManager.DecodeFrame(cameraFrame);
-                decoding = false;
-            }
-        }
-        if (Int64.MaxValue - counter < 1000)
-        {
-            Debug.Log("Resetting counter");
-            counter = 0;
-        }
-    }
-    */
+    
     void OnTrackablesUpdated()
     {
         if (cameraInitialized && !downloading)
@@ -561,7 +471,7 @@ public class CameraScript : MonoBehaviour
                             filePath = Directory.GetFiles("./Assets/object", "*.obj")[0];           //create object to load
                             mtlPath = Directory.GetFiles("./Assets/object", "*.mtl")[0];
                             Debug.Log("Proceed");
-                            var loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
+                            loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
                             Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                             loadedObj.transform.position += pos;
                             loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.Self);
@@ -638,7 +548,7 @@ public class CameraScript : MonoBehaviour
                     Debug.LogError("Please set FilePath in ObjFromFile.cs to a valid path.");
                 }
                 // string mtlPath = @"./Assets/object.mtl";                               //add prompt to scan materials or use defaults
-                var loadedObj = new OBJLoader().Load(filePath);             //GameObject var
+                loadedObj = new OBJLoader().Load(filePath);             //GameObject var
                 Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                 loadedObj.transform.position += pos;
 
@@ -783,53 +693,7 @@ public class CameraScript : MonoBehaviour
         videoPlayer.Prepare();
     }
 
-    // public void enter_fullscreen()
-    // {
-    //     //to avoid over zooming the object
-    //     /*if (Math.Abs(add_step) < Math.Abs(limit_zoom))
-    //     {
-    //         add_step -= step;
-    //     }*/
-
-       
-
-    //     if(zoom_in < limit_zoom)
-    //     {
-    //         zoom_in += step;
-    //         zoom_out = zoom_in;
-    //     }
-
-    //     //https://forum.unity.com/threads/setting-pos-z-in-recttransform-via-scripting.270230/
-    //     //newbutton.GetComponent<RectTransform>().localPosition = new Vector3(1,2,3);
-    //     image.GetComponent<RectTransform>().localScale = new Vector3(zoom_in, zoom_in, 1);
-    //     //exit_fullscreen_button.GetComponent<RectTransform>().localPosition = new Vector3(0, 0, -add_step);
-
-    //     fullscreen_button.image.sprite = fullscreen;
-
-    //     //fullscreen_button.gameObject.SetActive(false);
-    //     //exit_fullscreen_button.gameObject.SetActive(true);
-
-    // }
-    // public void exit_fullscreen()
-    // {
-    //     /*if (Math.Abs(add_step) > 1)
-    //     {
-    //         add_step += step;
-    //     }*/
-
-    //     if (zoom_out > 0.1f)
-    //     {
-    //         zoom_out -= step;
-    //         zoom_in = zoom_out;
-    //     }
-
-    //     image.GetComponent<RectTransform>().localScale = new Vector3(zoom_out, zoom_out, -1);
-    //     //exit_fullscreen_button.GetComponent<RectTransform>().localPosition = new Vector3(0, 0, add_step);
-
-    //     //fullscreen_button.gameObject.SetActive(true);
-    //     //exit_fullscreen_button.gameObject.SetActive(false);
-    // }
-
+    
     private void close()
     {
         image.material = init_material;
@@ -848,7 +712,9 @@ public class CameraScript : MonoBehaviour
         scan_area.gameObject.SetActive(true);
         //when an object is present dont scan until close button is pressed
         cameraInitialized = true;
-
+        Destroy(loadedObj);
+        
+        ProcessingMsg.gameObject.SetActive(false);
         if (videoPlayer.isPlaying)
         {
             videoPlayer.Stop();
@@ -858,100 +724,6 @@ public class CameraScript : MonoBehaviour
     }
 
 
-
-    //https://answers.unity.com/questions/1172061/how-to-change-image-of-button-when-clicked.html
-
-
-
-    /*
-     * THIS IS AN OLD IMPLEMENTATION WITH BAD RESULTS
-    //video player 
-    public void Play_Video(String video_url)
-    {
-        //Application.runInBackground = true;
-        my_coroutine = StartCoroutine(playVideo(video_url));
-    }
-
-    public void Stop_Video()
-    {
-        videoPlayer.Stop();
-        audioSource.Stop();
-        //Application.runInBackground = false;
-        StopCoroutine(my_coroutine);
-    }
-
-    //handling videos here
-    IEnumerator playVideo(String video_url)
-    {
-
-        //Add VideoPlayer to the GameObject
-        //videoPlayer = gameObject.AddComponent<VideoPlayer>();
-
-        //Add AudioSource
-        //audioSource = gameObject.AddComponent<AudioSource>();
-
-        //Disable Play on Awake for both Video and Audio
-        videoPlayer.playOnAwake = false;
-        audioSource.playOnAwake = false;
-        audioSource.Pause();
-
-        //We want to play from video clip not from url
-
-        videoPlayer.source = VideoSource.VideoClip;
-
-        // Video clip from Url
-        //https://answers.unity.com/questions/1370621/using-videoplayer-to-stream-a-video-from-a-website.html
-        //videoPlayer.source = VideoSource.Url;
-        //videoPlayer.url = "https://dl.dropbox.com/s/d4f4v2df1lhtz5q/DEMO%201%2027-36%281%29%281%29.mp4";
-
-        videoPlayer.source = VideoSource.Url;
-        videoPlayer.url = video_url;
-
-
-        //Set Audio Output to AudioSource
-        videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
-
-        //Assign the Audio from Video to AudioSource to be played
-        videoPlayer.controlledAudioTrackCount = 1;
-        //https://answers.unity.com/questions/1571440/audiosampleprovider-buffer-overflow.html
-        videoPlayer.EnableAudioTrack(0, false);
-        videoPlayer.SetTargetAudioSource(0, audioSource);
-
-        //Set video To Play then prepare Audio to prevent Buffering
-        //videoPlayer.clip = videoToPlay;
-        videoPlayer.Prepare();
-
-        //WaitForSeconds waitTime = new WaitForSeconds(5);
-        //Wait until video is prepared
-        while (!videoPlayer.isPrepared)
-        {
-            yield return null;
-            //yield return waitTime;
-        }
-
-        Debug.Log("Done Preparing Video");
-
-        //rawVideo.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.height*shrink_height, Screen.width*shrink_width);
-        //Assign the Texture from Video to RawImage to be displayed
-        
-        rawVideo = videoPlayer;
-
-        //Play Video
-        videoPlayer.Play();
-
-        //Play Sound
-        audioSource.Play();
-
-        Debug.Log("Playing Video");
-        while (videoPlayer.isPlaying)
-        {
-            Debug.LogWarning("Video Time: " + Mathf.FloorToInt((float)videoPlayer.time));
-            yield return null;
-        }
-
-        Debug.Log("Done Playing Video");
-    }
-	*/
 
 
     void OnPaused(bool paused)
@@ -968,68 +740,7 @@ public class CameraScript : MonoBehaviour
 
 
 
-    /// <summary>
-    /// Unused
-    /// </summary>
-    /// <param name="camerafeed"></param>
-    /*
-    private void convertImage(Image camerafeed)
-    {
-        texture2D = new Texture2D(camerafeed.BufferWidth, camerafeed.BufferHeight,   TextureFormat.RGBA32, false);
-        //texture2D.LoadImage(camerafeed.Pixels);
-        texture2D.LoadRawTextureData(camerafeed.Pixels);
-        texture2D.Apply();
-        image.GetComponent<RectTransform>().sizeDelta = new Vector2(Convert.ToInt32(0.75* texture2D.width), texture2D.height);
-        //rawImage.material = project_material;
-        // rawImage.material.SetTexture("img",texture2D);
-        image.texture = texture2D;
-    }
-    */
-
-    /** Unused **/
-    /* 
-    private RGBLuminanceSource trackWithRGBLuminance(Image camerafeed)
-    {
-        string imageInfo = " Frame Properties: ";
-        imageInfo += " 1. size: width = " + camerafeed.Width + " x height = " + camerafeed.Height + "\n";
-        imageInfo += " 2. bufferSize: " + camerafeed.BufferWidth + " x " + camerafeed.BufferHeight + "\n";
-        imageInfo += " 3. stride: " + camerafeed.Stride;
-        Debug.Log(imageInfo);
-        RGBLuminanceSource src = new RGBLuminanceSource(camerafeed.Pixels, camerafeed.BufferWidth, camerafeed.BufferHeight, RGBLuminanceSource.BitmapFormat.Gray8);
-        Debug.Log("Attempting loading of source with RGBLuminance has width = " + src.Width + "height = " + src.Height);
-        RGBLuminanceSource croppedSource;
-        byte[] croppedImage;
-        if (src.CropSupported)
-        {
-            int left = Convert.ToInt32(camerafeed.BufferWidth * shrink_left);
-            int top = Convert.ToInt32(camerafeed.BufferHeight * shrink_top);
-            int width = Convert.ToInt32(camerafeed.BufferWidth * shrink_width);
-            int height = Convert.ToInt32(camerafeed.BufferHeight * shrink_height);
-            Debug.Log("Cropping image with values left = " + left + " top = " + top + " width = " + width + " height = " + height);
-            croppedSource = (RGBLuminanceSource)src.crop(left, top, width, height);
-            Debug.Log("Height is " + croppedSource.Height + " Width is " + croppedSource.Width);
-            croppedImage = croppedSource.Matrix;
-
-            //LuminanceSource inverted = croppedSource.invert();
-            //PreferBinarySerialization
-
-
-            texture2D = new Texture2D(croppedSource.Width, croppedSource.Height, TextureFormat.Alpha8, false);
-            //texture2D.LoadImage(camerafeed.Pixels);
-            texture2D.LoadRawTextureData(croppedSource.Matrix);
-            texture2D.Apply();
-            image.GetComponent<RectTransform>().sizeDelta = new Vector2(texture2D.width, texture2D.height);
-            //rawImage.material = project_material;
-            image.material.SetTexture("img", texture2D);
-            image.texture = texture2D;
-            return croppedSource;
-        }
-
-
-        return null;
-    }
-    */
-
+    
     //unused
     private RGBLuminanceSource CreateRGBLuminanceSource(Color32[] bytes, int width, int height)
     {
@@ -1042,30 +753,7 @@ public class CameraScript : MonoBehaviour
 
     }
 
-    //unused
-    /*
-    IEnumerator QRdecode(Image camerafeed)
-    {
-
-        Debug.Log("Height is  " + camerafeed.BufferHeight + " Width is " + camerafeed.BufferWidth);
-        string imageInfo = " image: \n";
-        imageInfo += " size: " + camerafeed.Width + " x " + camerafeed.Height + "\n";
-        imageInfo += " bufferSize: " + camerafeed.BufferWidth + " x " + camerafeed.BufferHeight + "\n";
-        imageInfo += " stride: " + camerafeed.Stride;
-        Debug.Log(imageInfo);
-        HybridBinarizer binarizer = new HybridBinarizer(trackWithRGBLuminance(camerafeed));
-
-        yield return reader.decode(new BinaryBitmap(binarizer));
-        //yield return barCodeReader.Decode(trackWithRGBLuminance(camerafeed));
-    }
-    //never hit
-    private void ResultPointFound(ResultPoint point)
-    {
-        Debug.Log("what");
-        barCodeReader.Options.TryHarder = true;
-    }
-    */
-
+    
 
     private bool isIP( string url ){ 
         // url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
