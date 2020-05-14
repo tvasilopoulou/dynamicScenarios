@@ -10,6 +10,7 @@ using ZXing;
 using ZXing.QrCode;
 using ZXing.Common;
 using System.IO;
+using System.IO.Compression;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using UnityEngine.Video;
@@ -18,8 +19,7 @@ using System.Threading;
 using System.Net;
 using Image = Vuforia.Image;
 using Dummiesman;
-
-
+using System.Text.RegularExpressions;
 
 
 
@@ -40,10 +40,10 @@ public class CameraScript : MonoBehaviour
     public Button pause_button;
     public Button scan_area;
     public GameObject ProcessingMsg;
-
+    public MeshRenderer frame;
 
     private BarCodeManager barCodeManager;
-
+    private Stream stream;
     // public Sprite fullscreen;
     // public Sprite exitFullscreen;
 
@@ -252,6 +252,94 @@ public class CameraScript : MonoBehaviour
         return new string( charArray );
     }
 
+    public IEnumerator Fetch( string url ) {
+        texture2D = new Texture2D(1, 1, TextureFormat.RGB24, true);
+         while(true) {
+             Debug.Log("loading... "+Time.realtimeSinceStartup);
+             WWWForm form = new WWWForm();
+             WWW www = new WWW(url);
+             yield return www;
+             if(!string.IsNullOrEmpty(www.error))
+                 throw new UnityException(www.error);
+             www.LoadImageIntoTexture(texture2D);
+         }
+     }
+
+    // public void OnGUI() {
+    //     GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), texture2D);
+    // }
+
+
+    public void GetVideo(string url){
+        texture2D = new Texture2D(2, 2); 
+        // create HTTP request
+        HttpWebRequest req = (HttpWebRequest) WebRequest.Create( url );
+        //Optional (if authorization is Digest)
+        req.ProtocolVersion = HttpVersion.Version10;
+        // req.Timeout = 5000;
+        req.Credentials = new NetworkCredential("username", "password");
+        // get response
+        WebResponse resp = req.GetResponse();
+        
+        // get response stream
+        stream = resp.GetResponseStream();
+        frame.material.color = Color.white;
+        // StartCoroutine (GetFrame ());
+    }
+    IEnumerator GetFrame (){
+        Byte [] JpegData = new Byte[65536];
+
+        while(true) {
+            int bytesToRead = FindLength(stream);
+            if (bytesToRead == -1) {
+                print("End of stream");
+                yield break;
+            }
+
+            int leftToRead=bytesToRead;
+
+            while (leftToRead > 0) {
+                leftToRead -= stream.Read (JpegData, bytesToRead - leftToRead, leftToRead);
+                yield return null;
+            }
+
+            MemoryStream ms = new MemoryStream(JpegData, 0, bytesToRead, false, true);
+
+            texture2D.LoadImage (ms.GetBuffer ());
+            frame.material.mainTexture = texture2D;
+            frame.material.color = Color.white;
+            stream.ReadByte(); // CR after bytes
+            stream.ReadByte(); // LF after bytes
+            ms.Close();
+        }
+    }
+
+    int FindLength(Stream stream)  {
+        int b;
+        string line="";
+        int result=-1;
+        bool atEOL=false;
+
+        while ((b=stream.ReadByte())!=-1) {
+            if (b==10) continue; // ignore LF char
+            if (b==13) { // CR
+                if (atEOL) {  // two blank lines means end of header
+                    stream.ReadByte(); // eat last LF
+                    return result;
+                }
+                if (line.StartsWith("Content-Length:")) {
+                    result=Convert.ToInt32(line.Substring("Content-Length:".Length).Trim());
+                } else {
+                    line="";
+                }
+                atEOL=true;
+            } else {
+                atEOL=false;
+                line+=(char)b;
+            }
+        }
+        return -1;
+    }
     /*
     void OnTrackablesUpdated()
     {
@@ -290,7 +378,6 @@ public class CameraScript : MonoBehaviour
         }
     }
     */
-
     void OnTrackablesUpdated()
     {
         if (cameraInitialized && !downloading)
@@ -328,7 +415,7 @@ public class CameraScript : MonoBehaviour
     }
     IEnumerator LoadFromWeb(string url)
     {
-
+        string urlBackup = "";
         ProcessingMsg.SetActive(true);
         downloading = true;
         cameraInitialized = false;
@@ -350,7 +437,23 @@ public class CameraScript : MonoBehaviour
             // url = "https://this-page-intentionally-left-blank.org/";
             // Debug.Log("ALLDONE");
         }
-       
+        else if(isIP(url)){
+            Debug.Log("Indeed ip");
+            urlBackup = String.Copy(url);
+            url = "https://this-page-intentionally-left-blank.org/";
+            UnityWebRequest webRequest = UnityWebRequest.Get(url);
+            yield return webRequest.SendWebRequest();
+            Debug.Log(webRequest);
+            if (webRequest.isNetworkError)
+                Debug.Log("A network error happened");
+            else {
+                content_info = webRequest.GetResponseHeaders();
+                foreach (KeyValuePair<string, string> pair in content_info)
+                {
+                    Debug.Log("key : " + pair.Key + " and Value : " + pair.Value);
+                }
+            }
+        }
 
         else{
             UnityWebRequest webRequest = UnityWebRequest.Get(url);
@@ -376,8 +479,8 @@ public class CameraScript : MonoBehaviour
         bool isYoutube = url.Contains("youtube");           //ROUTINE TO HANDLE YOUTUBE VIDEOS
 
         if(isYoutube){
-             Debug.Log("Yvideo is here");
-             string[] files = System.IO.Directory.GetFiles("./", "*.mp4");
+            Debug.Log("Yvideo is here");
+            string[] files = System.IO.Directory.GetFiles("./", "*.mp4");
             //Play_Video(url);
             Debug.Log(files[0]);
             closeButton.gameObject.SetActive(true); //if video takes to much time cancelation is available
@@ -393,9 +496,13 @@ public class CameraScript : MonoBehaviour
             bool isImage = content_info.ContainsValue("image/*");
             bool isVideo = content_info.ContainsValue("video/mp4");
             bool is3DObj = url.Contains(".obj");  //SHOULD PROBABLY CHANGE
+            bool isZip = url.Contains(".zip");  //SHOULD PROBABLY CHANGE
+            bool isIPCamera = isIP(url);
             Debug.Log("isImage = " + isImage);
             Debug.Log("isVideo = " + isVideo);
             Debug.Log("is3DObj = " + is3DObj);
+            Debug.Log("isZip = " + isZip);
+            Debug.Log("isIPCamera = " + isIPCamera);
 
             
             //foreach (KeyValuePair<string, string> pair in content_info)
@@ -422,9 +529,54 @@ public class CameraScript : MonoBehaviour
                 //exit_fullscreen_button.gameObject.SetActive(true);
                 ProcessingMsg.SetActive(false);
             }
+            else if(isZip){
+                Debug.Log("Zip is here");
+                closeButton.gameObject.SetActive(true);
+
+                string ext = Reverse(url);
+                int extension = ext.IndexOf(".");
+                ext = ext.Substring(0, extension);                              //reverse string to get its extension
+                ext = Reverse(ext);
+                Debug.Log("extension is "+ ext);
+                // if(File.Exists("./Assets/object.zip")){
+                //     File.Delete("./Assets/object.zip");
+                //     Debug.Log("Deletion done");
+                //     yield return null;
+                // }
+                if(!File.Exists("./Assets/object.zip")){
+                    using (var client = new WebClient()){
+                        client.DownloadFile(url, "./Assets/object.zip");           //from qr-url to specified obj path
+                    }
+                    if(!File.Exists("./Assets/object")) {                           //if no zips chached
+                        ZipFile.ExtractToDirectory(@"./Assets/object.zip", "./Assets/object");
+                        Debug.Log("Extraction OK");
+                        if(File.Exists("./Assets/object.zip"))                      //delete zipfile
+                            File.Delete("./Assets/object.zip");
+                        Debug.Log("Deletion done");
+                        string filePath = "";
+                        string mtlPath = "";
+                        int objFiles = Directory.GetFiles("./Assets/object", "*.obj").Length;
+                        int mtlFiles = Directory.GetFiles("./Assets/object", "*.mtl").Length;
+                        if(objFiles == 1 && mtlFiles == 1){
+                            filePath = Directory.GetFiles("./Assets/object", "*.obj")[0];           //create object to load
+                            mtlPath = Directory.GetFiles("./Assets/object", "*.mtl")[0];
+                            Debug.Log("Proceed");
+                            var loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
+                            Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
+                            loadedObj.transform.position += pos;
+                            loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.Self);
+                            Vector3 scaleChange = new Vector3(3.0f, 1.0f, 1.0f);
+                            loadedObj.transform.localScale += scaleChange;
+                        }
+                    }
+
+
+                }
+            }
             else if(is3DObj)
             {
                 Debug.Log("3d object is here");
+                closeButton.gameObject.SetActive(true);
 
                 string ext = Reverse(url);
                 int extension = ext.IndexOf(".");
@@ -466,7 +618,7 @@ public class CameraScript : MonoBehaviour
 
                 string filePath = "";
                 if(ext == "obj"){
-                    filePath = @"./Assets/object.obj";
+                    filePath = @"./Assets/object.obj";           //save under name object
                     Debug.Log("filepath: " + filePath);
                     #if UNITY_EDITOR
                         AssetDatabase.ImportAsset(filePath);
@@ -491,13 +643,13 @@ public class CameraScript : MonoBehaviour
                 loadedObj.transform.position += pos;
 
                 Vector3 screenPoint = loadedObj.transform.position;
-                // Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
-                // loadedObj.transform.position = Vector3.MoveTowards(loadedObj.transform.position, worldPos, 0);
+                Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
+                loadedObj.transform.position = Vector3.MoveTowards(loadedObj.transform.position, worldPos, 0);
 
-
-                loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.Self);
+                loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.World);
                 Vector3 scaleChange = new Vector3(3.0f, 1.0f, 1.0f);
                 loadedObj.transform.localScale += scaleChange;
+                // Debug.Log(UDTEventHandler::flag);
                 
 
             }
@@ -511,7 +663,19 @@ public class CameraScript : MonoBehaviour
                 any_coroutine = StartCoroutine(VideoRoutine(url, VideoPrepareCompleted, VideoEndReached));
             }
 
-            
+            else if (url.Contains("https://this-page-intentionally-left-blank.org/")){
+                closeButton.gameObject.SetActive(true);
+
+                url = "";
+                url = String.Copy(urlBackup);
+                Debug.Log("I am an ip: " + url);
+                // int flag = 0;
+                // if(flag==0){
+                //     System.Diagnostics.Process.Start(url);
+                //     flag=1;
+                // }
+                GetVideo(url);
+            }
 
             else{
                     //do nothing
@@ -901,6 +1065,18 @@ public class CameraScript : MonoBehaviour
         barCodeReader.Options.TryHarder = true;
     }
     */
+
+
+    private bool isIP( string url ){ 
+        // url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
+        var checkURL = url.Replace("http://", "");
+        checkURL = checkURL.Split('/')[0];
+        Debug.Log("is ip? " + checkURL);
+        var match = Regex.Match(checkURL, @"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b");
+        if(match.Success) return true;
+        else return false;
+    }
+
     //never used
     private LuminanceSource CreateLuminanceSource(Color32[] bytes, int width, int height)
     {
@@ -913,6 +1089,11 @@ public class CameraScript : MonoBehaviour
 
     }
 
-
+    void OnApplicationQuit()
+    {
+        Debug.Log("I'm out of here");
+        if(Directory.Exists("./Assets/object"))                      //delete object directory
+            Directory.Delete("./Assets/object", true);
+    }
 
 }
