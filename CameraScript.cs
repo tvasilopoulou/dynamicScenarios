@@ -54,7 +54,8 @@ public class CameraScript : MonoBehaviour
     public Slider zoom;
 
     public GameObject loadedObj;
-
+    public MemoryStream ms;
+    public bool draw;
     //private float add_step;
     private Coroutine any_coroutine;
 
@@ -105,6 +106,7 @@ public class CameraScript : MonoBehaviour
         //     client.DownloadFile("https://free3d.com/dl-files.php?p=5b576a4b26be8bed5e8b45b6&f=0", ".obj.zip");
         // }
 
+        draw = false;
 
         var vuforia = VuforiaARController.Instance;
         vuforia.RegisterVuforiaStartedCallback(OnVuforiaStarted);
@@ -216,6 +218,11 @@ public class CameraScript : MonoBehaviour
          }
      }
 
+    public void OnGUI() {
+        if(draw == true)
+            GUI.DrawTexture(new Rect(220, 10, 300, 300), texture2D);
+     }
+
 
     public void GetVideo(string url){
         texture2D = new Texture2D(2, 2); 
@@ -223,7 +230,8 @@ public class CameraScript : MonoBehaviour
         HttpWebRequest req = (HttpWebRequest) WebRequest.Create( url );
         //Optional (if authorization is Digest)
         req.ProtocolVersion = HttpVersion.Version10;
-        // req.Timeout = 5000;
+        draw = true;
+        req.Timeout = 5000;
         req.Credentials = new NetworkCredential("username", "password");
         // get response
         WebResponse resp = req.GetResponse();
@@ -231,7 +239,7 @@ public class CameraScript : MonoBehaviour
         // get response stream
         stream = resp.GetResponseStream();
         frame.material.color = Color.white;
-        // StartCoroutine (GetFrame ());
+        StartCoroutine (GetFrame ());
     }
     IEnumerator GetFrame (){
         Byte [] JpegData = new Byte[65536];
@@ -250,7 +258,7 @@ public class CameraScript : MonoBehaviour
                 yield return null;
             }
 
-            MemoryStream ms = new MemoryStream(JpegData, 0, bytesToRead, false, true);
+            ms = new MemoryStream(JpegData, 0, bytesToRead, false, true);
 
             texture2D.LoadImage (ms.GetBuffer ());
             frame.material.mainTexture = texture2D;
@@ -290,6 +298,7 @@ public class CameraScript : MonoBehaviour
     
     void OnTrackablesUpdated()
     {
+        CameraDevice.Instance.SetFlashTorchMode( true );
         if (cameraInitialized && !downloading)
         {
             Vuforia.Image cameraFrame = null;
@@ -460,9 +469,13 @@ public class CameraScript : MonoBehaviour
                     if(!File.Exists("./Assets/object")) {                           //if no zips chached
                         ZipFile.ExtractToDirectory(@"./Assets/object.zip", "./Assets/object");
                         Debug.Log("Extraction OK");
-                        if(File.Exists("./Assets/object.zip"))                      //delete zipfile
+                        // if(File.Exists("./Assets/object.zip"))                      //delete zipfile
                             File.Delete("./Assets/object.zip");
                         Debug.Log("Deletion done");
+                        string objFile = Directory.GetFiles("./Assets/object", "*.obj")[0];
+                        string mtlFile = Directory.GetFiles("./Assets/object", "*.mtl")[0];
+                        System.IO.File.Move(objFile, "./Assets/object/object.obj");
+                        System.IO.File.Move(mtlFile, "./Assets/object/object.mtl");
                         string filePath = "";
                         string mtlPath = "";
                         int objFiles = Directory.GetFiles("./Assets/object", "*.obj").Length;
@@ -471,7 +484,10 @@ public class CameraScript : MonoBehaviour
                             filePath = Directory.GetFiles("./Assets/object", "*.obj")[0];           //create object to load
                             mtlPath = Directory.GetFiles("./Assets/object", "*.mtl")[0];
                             Debug.Log("Proceed");
+                            Destroy(loadedObj);
+                            loadedObj = null;
                             loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
+
                             Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                             loadedObj.transform.position += pos;
                             loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.Self);
@@ -548,13 +564,15 @@ public class CameraScript : MonoBehaviour
                     Debug.LogError("Please set FilePath in ObjFromFile.cs to a valid path.");
                 }
                 // string mtlPath = @"./Assets/object.mtl";                               //add prompt to scan materials or use defaults
+                Destroy(loadedObj);
+                loadedObj = null;
                 loadedObj = new OBJLoader().Load(filePath);             //GameObject var
                 Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                 loadedObj.transform.position += pos;
 
-                Vector3 screenPoint = loadedObj.transform.position;
-                Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
-                loadedObj.transform.position = Vector3.MoveTowards(loadedObj.transform.position, worldPos, 0);
+                // Vector3 screenPoint = loadedObj.transform.position;
+                // Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
+                // loadedObj.transform.position = Vector3.MoveTowards(loadedObj.transform.position, worldPos, 0);
 
                 loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.World);
                 Vector3 scaleChange = new Vector3(3.0f, 1.0f, 1.0f);
@@ -712,8 +730,34 @@ public class CameraScript : MonoBehaviour
         scan_area.gameObject.SetActive(true);
         //when an object is present dont scan until close button is pressed
         cameraInitialized = true;
+        // Destroy(loadedObj);
+        // loadedObj = GameObject.Find("object");
         Destroy(loadedObj);
-        
+        loadedObj = GameObject.Find("object");
+        Destroy(loadedObj);
+
+        if(File.Exists("./Assets/object.obj")){
+            File.Delete("./Assets/object.obj");
+        }
+        if(File.Exists(@"./Assets/object.zip")){
+            File.Delete("./Assets/object.zip");
+        }
+        if(Directory.Exists("./Assets/object"))                      //delete object directory
+            Directory.Delete("./Assets/object", true);
+
+        draw = false;
+        // string filePath2 = Directory.GetFiles("./Assets", "*.obj")[1];
+        // GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("12221_Cat_v1_l3");
+        // foreach (GameObject target in gameObjects) {
+        //     GameObject.Destroy(target);
+        // }
+        // Debug.Log("Deleting " + filePath);
+        // Destroy(remObj);
+        // remObj = GameObject.Find(filePath2);
+
+        // Debug.Log("Deleting " + filePath2);
+        // Destroy(remObj);
+        StopCoroutine(GetFrame());
         ProcessingMsg.gameObject.SetActive(false);
         if (videoPlayer.isPlaying)
         {
@@ -758,6 +802,7 @@ public class CameraScript : MonoBehaviour
     private bool isIP( string url ){ 
         // url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
         var checkURL = url.Replace("http://", "");
+        checkURL = checkURL.Replace("https://", "");
         checkURL = checkURL.Split('/')[0];
         Debug.Log("is ip? " + checkURL);
         var match = Regex.Match(checkURL, @"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b");
