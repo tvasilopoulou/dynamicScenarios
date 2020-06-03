@@ -181,9 +181,15 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             if(File.Exists("object.obj")){
                 loadedObj = null;
                 loadedObj = GameObject.Find("object");
+                Debug.Log("hello5");
+
                 Destroy(loadedObj);
+                Debug.Log("hello6");
+
                 string filePath = Directory.GetFiles("./Assets", "*.obj")[0];
                 loadedObj = new OBJLoader().Load(filePath);
+                Debug.Log("hello7");
+
                 loadedObj.transform.Rotate(0.0f, -180.0f, 360.0f, Space.World);
             }
             if(Directory.Exists("./Assets/object")) {

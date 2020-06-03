@@ -56,6 +56,9 @@ public class CameraScript : MonoBehaviour
     public GameObject loadedObj;
     public MemoryStream ms;
     public bool draw;
+    public bool zipBuild;
+    public bool plainBuild;
+    // public bool buttonFlag;
     //private float add_step;
     private Coroutine any_coroutine;
 
@@ -73,7 +76,6 @@ public class CameraScript : MonoBehaviour
     //private Vector3 world_point = new Vector3();
     //private Camera cam;
     private bool decoding;
-
     //public VideoClip videoToPlay;
     //private VideoPlayer videoPlayer;
     private VideoSource videoSource;
@@ -107,6 +109,8 @@ public class CameraScript : MonoBehaviour
         // }
 
         draw = false;
+        zipBuild = true;
+        plainBuild = true;
 
         var vuforia = VuforiaARController.Instance;
         vuforia.RegisterVuforiaStartedCallback(OnVuforiaStarted);
@@ -165,7 +169,7 @@ public class CameraScript : MonoBehaviour
 			{
                 string url = obj.Text;
                 
-                if(url.Contains("dropbox")){
+                if(url.Contains("dropbox") || url.Contains("drive")){
                     url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
                     url = url.Replace("://www.", "://dl.");
                 }
@@ -220,7 +224,7 @@ public class CameraScript : MonoBehaviour
 
     public void OnGUI() {
         if(draw == true)
-            GUI.DrawTexture(new Rect(220, 10, 300, 300), texture2D);
+            GUI.DrawTexture(new Rect(160, 10, 330, 300), texture2D);
      }
 
 
@@ -335,6 +339,7 @@ public class CameraScript : MonoBehaviour
     IEnumerator LoadFromWeb(string url)
     {
         string urlBackup = "";
+        var gObj = FindObjectsOfType(typeof(GameObject));
         ProcessingMsg.SetActive(true);
         downloading = true;
         cameraInitialized = false;
@@ -375,6 +380,21 @@ public class CameraScript : MonoBehaviour
         }
 
         else{
+            if(url.Contains("drive")){
+                string ext = Reverse(url);
+                int extension = ext.IndexOf("/");
+                ext = ext.Substring(extension , ext.Length-extension);                              //reverse string to get its extension
+                extension = ext.IndexOf("/");
+                ext = ext.Split('/')[1];
+                ext = ext.Split('/')[0];
+
+                ext = Reverse(ext);
+                Debug.Log("iafe "+ext);
+                url = "https://drive.google.com/uc?export=download&id=" + ext;
+                // using (var client = new WebClient()){
+                //     client.DownloadFile(url, "./Assets/" + ext);           //from qr-url to specified obj path
+                // }
+            }
             UnityWebRequest webRequest = UnityWebRequest.Get(url);
             yield return webRequest.SendWebRequest();
             Debug.Log(webRequest);
@@ -390,6 +410,7 @@ public class CameraScript : MonoBehaviour
         }
         Debug.Log("2OK");
         DownloadHandlerTexture texDl = new DownloadHandlerTexture(true);
+
         UnityWebRequest wr = new UnityWebRequest(url);
         wr.downloadHandler = texDl;
         yield return wr.SendWebRequest();
@@ -412,35 +433,36 @@ public class CameraScript : MonoBehaviour
             Debug.Log("DownloadedImage");
 
             //Types of Digital Image Files: TIFF, JPEG, GIF, PNG
-            bool isImage = content_info.ContainsValue("image/*");
+            bool isImage = content_info.ContainsValue("image/*") || 
+                    url.Contains(".jpg") || url.Contains(".jpeg") | url.Contains(".tiff") || url.Contains(".gif") || url.Contains(".png");
+            Debug.Log("content_info " + content_info);
             bool isVideo = content_info.ContainsValue("video/mp4");
             bool is3DObj = url.Contains(".obj");  //SHOULD PROBABLY CHANGE
             bool isZip = url.Contains(".zip");  //SHOULD PROBABLY CHANGE
             bool isIPCamera = isIP(url);
+            // Debug.Log(content_info);
             Debug.Log("isImage = " + isImage);
             Debug.Log("isVideo = " + isVideo);
             Debug.Log("is3DObj = " + is3DObj);
             Debug.Log("isZip = " + isZip);
             Debug.Log("isIPCamera = " + isIPCamera);
-
-            
-            //foreach (KeyValuePair<string, string> pair in content_info)
-                //Debug.Log("key : " + pair.Key + " and Value : " + pair.Value);
-
-
+            Debug.Log("content_info " + isImage);
+            ProcessingMsg.SetActive(false);
         //GOOD PART
-            if (content_info.ContainsValue("image/tiff") || content_info.ContainsValue("image/jpeg")
-                || content_info.ContainsValue("image/gif") || content_info.ContainsValue("image/png"))
+            if (content_info.ContainsValue("image/tiff") || content_info.ContainsValue("image/jpeg") || content_info.ContainsValue("image/jpg")
+                || content_info.ContainsValue("image/gif") || content_info.ContainsValue("image/png") || isImage == true)
             {
                 Debug.Log("we have an image!");
                 //the user see the object. no scanning needed
+                
                 cameraInitialized = false;
-
+                Debug.Log(texDl.texture.width);
                 Sprite s =  Sprite.Create(texDl.texture, new Rect(0, 0, texDl.texture.width, texDl.texture.height), new Vector2(0, 0));
                 texture2D = texDl.texture;
+                
                 image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
                 image.sprite = s;
-
+                Debug.Log("sprite: " + s);
                 image.material = project_material;
                 closeButton.gameObject.SetActive(true);
                 zoom.gameObject.SetActive(true);
@@ -457,25 +479,21 @@ public class CameraScript : MonoBehaviour
                 ext = ext.Substring(0, extension);                              //reverse string to get its extension
                 ext = Reverse(ext);
                 Debug.Log("extension is "+ ext);
-                // if(File.Exists("./Assets/object.zip")){
-                //     File.Delete("./Assets/object.zip");
-                //     Debug.Log("Deletion done");
-                //     yield return null;
-                // }
                 if(!File.Exists("./Assets/object.zip")){
                     using (var client = new WebClient()){
                         client.DownloadFile(url, "./Assets/object.zip");           //from qr-url to specified obj path
                     }
                     if(!File.Exists("./Assets/object")) {                           //if no zips chached
-                        ZipFile.ExtractToDirectory(@"./Assets/object.zip", "./Assets/object");
+                        ZipFile.ExtractToDirectory("./Assets/object.zip", "./Assets/object", true);
                         Debug.Log("Extraction OK");
                         // if(File.Exists("./Assets/object.zip"))                      //delete zipfile
-                            File.Delete("./Assets/object.zip");
+                        File.Delete("./Assets/object.zip");
+                        File.Delete("./Assets/object.zip.meta");
                         Debug.Log("Deletion done");
                         string objFile = Directory.GetFiles("./Assets/object", "*.obj")[0];
                         string mtlFile = Directory.GetFiles("./Assets/object", "*.mtl")[0];
-                        System.IO.File.Move(objFile, "./Assets/object/object.obj");
-                        System.IO.File.Move(mtlFile, "./Assets/object/object.mtl");
+                        if(!File.Exists("./Assets/object/object.obj")) System.IO.File.Move(objFile, "./Assets/object/object.obj");
+                        if(!File.Exists("./Assets/object/object.mtl")) System.IO.File.Move(mtlFile, "./Assets/object/object.mtl");
                         string filePath = "";
                         string mtlPath = "";
                         int objFiles = Directory.GetFiles("./Assets/object", "*.obj").Length;
@@ -485,8 +503,15 @@ public class CameraScript : MonoBehaviour
                             mtlPath = Directory.GetFiles("./Assets/object", "*.mtl")[0];
                             Debug.Log("Proceed");
                             Destroy(loadedObj);
-                            loadedObj = null;
-                            loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
+                            // loadedObj = null;
+                            // gObj = FindObjectsOfType(typeof(GameObject));
+                            for(int i = 0; i<gObj.Length; i++){
+                                if(gObj[i].name.Contains("object")){
+                                    Debug.Log(gObj[i] + "  : " + i);
+                                    Destroy(gObj[i]);
+                                }
+                            }
+                            if (zipBuild == true) loadedObj = new OBJLoader().Load(filePath, mtlPath);             //GameObject var
 
                             Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                             loadedObj.transform.position += pos;
@@ -495,8 +520,20 @@ public class CameraScript : MonoBehaviour
                             loadedObj.transform.localScale += scaleChange;
                         }
                     }
-
-
+                    // ProcessingMsg.SetActive(false);
+                    var gameObjects = FindObjectsOfType(typeof(GameObject));
+                    // for(int i = 0; i<gameObjects.Length; i++){
+                    //     if(gameObjects[i].name.Contains("BuildButton")){
+                    //         Debug.Log(gameObjects[i] + "  : " + i);
+                    //         // Destroy(gameObjects[i]);
+                    //         gameObjects[i].onClick.Invoke();
+                    //     }
+                    // }
+                    Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
+                    if (zipBuild == true){
+                        gameObj.onClick.Invoke();
+                        zipBuild = false;
+                    } 
                 }
             }
             else if(is3DObj)
@@ -564,11 +601,22 @@ public class CameraScript : MonoBehaviour
                     Debug.LogError("Please set FilePath in ObjFromFile.cs to a valid path.");
                 }
                 // string mtlPath = @"./Assets/object.mtl";                               //add prompt to scan materials or use defaults
-                Destroy(loadedObj);
-                loadedObj = null;
+                // Destroy(loadedObj);
+                // loadedObj = null;
+                // gObj = FindObjectsOfType(typeof(GameObject));
+                Debug.Log("hello1");
+                for(int i = 0; i<gObj.Length; i++){
+                    if(gObj[i].name.Contains("object") && plainBuild == true){
+                        Debug.Log(gObj[i] + "  : " + i);
+                        Destroy(gObj[i]);
+                    }
+                }
+                Debug.Log("hello2");
+                // if (plainBuild == false)
                 loadedObj = new OBJLoader().Load(filePath);             //GameObject var
                 Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                 loadedObj.transform.position += pos;
+                Debug.Log("hello3");
 
                 // Vector3 screenPoint = loadedObj.transform.position;
                 // Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
@@ -578,7 +626,14 @@ public class CameraScript : MonoBehaviour
                 Vector3 scaleChange = new Vector3(3.0f, 1.0f, 1.0f);
                 loadedObj.transform.localScale += scaleChange;
                 // Debug.Log(UDTEventHandler::flag);
-                
+                // ProcessingMsg.SetActive(false);
+                Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
+                Debug.Log("hello4");
+
+                if (plainBuild == true){
+                    gameObj.onClick.Invoke();
+                    plainBuild = false;
+                } 
 
             }
 
@@ -603,6 +658,7 @@ public class CameraScript : MonoBehaviour
                 //     flag=1;
                 // }
                 GetVideo(url);
+
             }
 
             else{
@@ -735,9 +791,10 @@ public class CameraScript : MonoBehaviour
         Destroy(loadedObj);
         loadedObj = GameObject.Find("object");
         Destroy(loadedObj);
-
+        Destroy(GameObject.Find("object"));
         if(File.Exists("./Assets/object.obj")){
             File.Delete("./Assets/object.obj");
+            File.Delete("./Assets/object.obj.meta");
         }
         if(File.Exists(@"./Assets/object.zip")){
             File.Delete("./Assets/object.zip");
@@ -757,6 +814,11 @@ public class CameraScript : MonoBehaviour
 
         // Debug.Log("Deleting " + filePath2);
         // Destroy(remObj);
+
+        var imageTarget = GameObject.Find("ImageTargetBehaviour");
+        // if(imageTarget == null){
+        
+        // }
         StopCoroutine(GetFrame());
         ProcessingMsg.gameObject.SetActive(false);
         if (videoPlayer.isPlaying)
@@ -803,7 +865,9 @@ public class CameraScript : MonoBehaviour
         // url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
         var checkURL = url.Replace("http://", "");
         checkURL = checkURL.Replace("https://", "");
+        if(checkURL.Contains("mjpg") || checkURL.Contains("mpg")) return true;
         checkURL = checkURL.Split('/')[0];
+        checkURL = checkURL.Split(':')[0];
         Debug.Log("is ip? " + checkURL);
         var match = Regex.Match(checkURL, @"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b");
         if(match.Success) return true;
