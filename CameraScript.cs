@@ -48,6 +48,8 @@ public class CameraScript : MonoBehaviour
     // public Sprite fullscreen;
     // public Sprite exitFullscreen;
 
+    // public GameObject plane;
+
     private float step = 0.1f;
     private float limit_zoom = 2.0f;
     private float zoom_in = 1, zoom_out = 1;
@@ -58,8 +60,9 @@ public class CameraScript : MonoBehaviour
     public bool draw;
     public bool zipBuild;
     public bool plainBuild;
+    public bool imgBuild;
     // public bool buttonFlag;
-    //private float add_step;
+    private int rotCount;
     private Coroutine any_coroutine;
 
     //private data members
@@ -108,10 +111,15 @@ public class CameraScript : MonoBehaviour
         //     client.DownloadFile("https://free3d.com/dl-files.php?p=5b576a4b26be8bed5e8b45b6&f=0", ".obj.zip");
         // }
 
+        rotCount = 0;
+
         draw = false;
         zipBuild = true;
+        imgBuild = true;
         plainBuild = true;
-
+        // plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        // plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
+        // plane.transform.Rotate(90.0f, 0.0f, 0.0f, Space.World);
         var vuforia = VuforiaARController.Instance;
         vuforia.RegisterVuforiaStartedCallback(OnVuforiaStarted);
         vuforia.RegisterOnPauseCallback(OnPaused);
@@ -164,7 +172,8 @@ public class CameraScript : MonoBehaviour
         reader = new QRCodeReader();
         barCodeReader = new BarcodeReader(reader, null, (src)=> {return new HybridBinarizer(src); });
         barCodeReader.ResultFound += (obj) => {
-            Debug.Log("OnResultScanned");
+        Debug.Log("OnResultScanned");
+
             if (obj != null)
 			{
                 string url = obj.Text;
@@ -389,7 +398,6 @@ public class CameraScript : MonoBehaviour
                 ext = ext.Split('/')[0];
 
                 ext = Reverse(ext);
-                Debug.Log("iafe "+ext);
                 url = "https://drive.google.com/uc?export=download&id=" + ext;
                 // using (var client = new WebClient()){
                 //     client.DownloadFile(url, "./Assets/" + ext);           //from qr-url to specified obj path
@@ -448,6 +456,7 @@ public class CameraScript : MonoBehaviour
             Debug.Log("isIPCamera = " + isIPCamera);
             Debug.Log("content_info " + isImage);
             ProcessingMsg.SetActive(false);
+            
         //GOOD PART
             if (content_info.ContainsValue("image/tiff") || content_info.ContainsValue("image/jpeg") || content_info.ContainsValue("image/jpg")
                 || content_info.ContainsValue("image/gif") || content_info.ContainsValue("image/png") || isImage == true)
@@ -455,15 +464,38 @@ public class CameraScript : MonoBehaviour
                 Debug.Log("we have an image!");
                 //the user see the object. no scanning needed
                 
+                if (imgBuild == true){
+                    var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                    Plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
+                    if(rotCount == 0 ){
+                        Plane.transform.Rotate(90.0f, 0.0f, 0.0f, Space.World);
+                        rotCount++;
+                    }
+
                 cameraInitialized = false;
                 Debug.Log(texDl.texture.width);
                 Sprite s =  Sprite.Create(texDl.texture, new Rect(0, 0, texDl.texture.width, texDl.texture.height), new Vector2(0, 0));
                 texture2D = texDl.texture;
                 
-                image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
-                image.sprite = s;
+                // image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
+                // image.sprite = s;
                 Debug.Log("sprite: " + s);
-                image.material = project_material;
+                // image.material = project_material;
+                // Vector3 trans = new Vector3(2000.0f, 2000.0f, 2000.0f);
+                // image.transform.position = trans;
+
+                GameObject plane = GameObject.Find("Plane");
+                Debug.Log("project material is: " + project_material);
+                plane.GetComponent<Renderer>().material = project_material;
+                plane.GetComponent<Renderer>().material.mainTexture = texture2D;
+                plane.name = "object";
+                }
+                Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
+                if (imgBuild == true){
+                    gameObj.onClick.Invoke();
+                    imgBuild = false;
+                } 
+                // plane.GetComponent<MeshRenderer>()=image;
                 closeButton.gameObject.SetActive(true);
                 zoom.gameObject.SetActive(true);
                 //fullscreen_button.gameObject.SetActive(true);
@@ -604,19 +636,16 @@ public class CameraScript : MonoBehaviour
                 // Destroy(loadedObj);
                 // loadedObj = null;
                 // gObj = FindObjectsOfType(typeof(GameObject));
-                Debug.Log("hello1");
                 for(int i = 0; i<gObj.Length; i++){
                     if(gObj[i].name.Contains("object") && plainBuild == true){
                         Debug.Log(gObj[i] + "  : " + i);
                         Destroy(gObj[i]);
                     }
                 }
-                Debug.Log("hello2");
                 // if (plainBuild == false)
                 loadedObj = new OBJLoader().Load(filePath);             //GameObject var
                 Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                 loadedObj.transform.position += pos;
-                Debug.Log("hello3");
 
                 // Vector3 screenPoint = loadedObj.transform.position;
                 // Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
@@ -802,7 +831,12 @@ public class CameraScript : MonoBehaviour
         if(Directory.Exists("./Assets/object"))                      //delete object directory
             Directory.Delete("./Assets/object", true);
 
+        // while(GameObject.Find("object")) Destroy(loadedObj);
+
         draw = false;
+        zipBuild = true;
+        imgBuild = true;
+        plainBuild = true;
         // string filePath2 = Directory.GetFiles("./Assets", "*.obj")[1];
         // GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("12221_Cat_v1_l3");
         // foreach (GameObject target in gameObjects) {

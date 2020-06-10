@@ -25,6 +25,7 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
     /// that is instantiated for augmentations of new User-Defined Targets.
     /// </summary>
     public int flag = 0;
+    public int rotCount = 0;
     public GameObject loadedObj;
     public Button closeButton;
     public ImageTargetBehaviour ImageTargetTemplate;
@@ -178,23 +179,23 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             // closeButton = GameObject.Find("Close").GetComponent<Button>();
             m_TargetBuildingBehaviour.BuildNewTarget(targetName, ImageTargetTemplate.GetSize().x);
             // closeButton.gameObject.SetActive(true);
+            int flag = 0;
             if(File.Exists("object.obj")){
+                flag = 1;
                 loadedObj = null;
                 loadedObj = GameObject.Find("object");
-                Debug.Log("hello5");
 
                 Destroy(loadedObj);
-                Debug.Log("hello6");
 
                 string filePath = Directory.GetFiles("./Assets", "*.obj")[0];
                 loadedObj = new OBJLoader().Load(filePath);
-                Debug.Log("hello7");
 
                 loadedObj.transform.Rotate(0.0f, -180.0f, 360.0f, Space.World);
             }
-            if(Directory.Exists("./Assets/object")) {
+            else if(Directory.Exists("./Assets/object")) {
+            // if(Directory.Exists("./Assets/object")) {
                 loadedObj = null;
-            
+                flag = 1;
                 Debug.Log("I have a file available.");
                 string filePath = Directory.GetFiles("./Assets/object", "*.obj")[0];
                 filePath = filePath.Replace(@"\", "/");
@@ -210,10 +211,18 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             Vector3 pos = new Vector3(0.0f,-1254.0f,-840.0f);
             loadedObj.transform.position = pos;
 
+            Debug.Log(loadedObj.transform.localScale);
+
             loadedObj.transform.Rotate(180.0f, 0.0f, 360.0f, Space.World);
             Vector3 scaleChange = new Vector3(10.0f, 10.0f, 10.0f);
             loadedObj.transform.localScale = scaleChange;
-
+            if(flag == 0){
+                loadedObj.transform.localScale += 4 * scaleChange;
+                if(rotCount == 0 ){
+                    loadedObj.transform.Rotate(-90.0f, 90.0f, 0.0f, Space.World);
+                    rotCount++;
+                }
+            }
 
         }
         else
