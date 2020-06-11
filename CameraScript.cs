@@ -465,12 +465,11 @@ public class CameraScript : MonoBehaviour
                 //the user see the object. no scanning needed
                 
                 if (imgBuild == true){
-                    var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                    Plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
-                    if(rotCount == 0 ){
-                        Plane.transform.Rotate(90.0f, 0.0f, 0.0f, Space.World);
-                        rotCount++;
-                    }
+                    
+                var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                Plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
+                Plane.transform.Rotate(0.0f, 0.0f, -180.0f, Space.World);
+
 
                 cameraInitialized = false;
                 Debug.Log(texDl.texture.width);

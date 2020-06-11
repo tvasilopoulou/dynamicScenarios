@@ -218,10 +218,10 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             loadedObj.transform.localScale = scaleChange;
             if(flag == 0){
                 loadedObj.transform.localScale += 4 * scaleChange;
-                if(rotCount == 0 ){
-                    loadedObj.transform.Rotate(-90.0f, 90.0f, 0.0f, Space.World);
-                    rotCount++;
-                }
+                // if(rotCount == 0 ){
+                //     loadedObj.transform.Rotate(-90.0f, 90.0f, 0.0f, Space.World);
+                //     rotCount++;
+                // }
             }
 
         }
