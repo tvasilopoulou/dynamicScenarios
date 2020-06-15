@@ -25,7 +25,7 @@ using System.Text.RegularExpressions;
 
 public class CameraScript : MonoBehaviour
 {
-
+    public int loopCount;
     //public RawImage rawImage;
     public UnityEngine.UI.Image image;
     //public GameObject uDTManager;
@@ -61,6 +61,8 @@ public class CameraScript : MonoBehaviour
     public bool zipBuild;
     public bool plainBuild;
     public bool imgBuild;
+    public bool vidBuild;
+
     // public bool buttonFlag;
     private int rotCount;
     private Coroutine any_coroutine;
@@ -106,16 +108,12 @@ public class CameraScript : MonoBehaviour
         ProcessingMsg.SetActive(false);
         zoom.gameObject.SetActive(false);
 
-        // download link 
-        // using (var client = new WebClient()){
-        //     client.DownloadFile("https://free3d.com/dl-files.php?p=5b576a4b26be8bed5e8b45b6&f=0", ".obj.zip");
-        // }
-
         rotCount = 0;
-
+        loopCount = 0;
         draw = false;
         zipBuild = true;
         imgBuild = true;
+        vidBuild = true;
         plainBuild = true;
         // plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         // plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
@@ -169,11 +167,11 @@ public class CameraScript : MonoBehaviour
 
     private void ConfigureBarcodeScanner()
     {
+        
         reader = new QRCodeReader();
         barCodeReader = new BarcodeReader(reader, null, (src)=> {return new HybridBinarizer(src); });
         barCodeReader.ResultFound += (obj) => {
         Debug.Log("OnResultScanned");
-
             if (obj != null)
 			{
                 string url = obj.Text;
@@ -450,7 +448,7 @@ public class CameraScript : MonoBehaviour
             bool isIPCamera = isIP(url);
             // Debug.Log(content_info);
             Debug.Log("isImage = " + isImage);
-            Debug.Log("isVideo = " + isVideo);
+            Debug.Log("isVideo = " + isVideo + loopCount);
             Debug.Log("is3DObj = " + is3DObj);
             Debug.Log("isZip = " + isZip);
             Debug.Log("isIPCamera = " + isIPCamera);
@@ -465,7 +463,7 @@ public class CameraScript : MonoBehaviour
                 //the user see the object. no scanning needed
                 
                 if (imgBuild == true){
-                    
+                
                 var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 Plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
                 Plane.transform.Rotate(0.0f, 0.0f, -180.0f, Space.World);
@@ -478,7 +476,7 @@ public class CameraScript : MonoBehaviour
                 
                 // image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
                 // image.sprite = s;
-                Debug.Log("sprite: " + s);
+                // Debug.Log("sprite: " + s);
                 // image.material = project_material;
                 // Vector3 trans = new Vector3(2000.0f, 2000.0f, 2000.0f);
                 // image.transform.position = trans;
@@ -757,8 +755,7 @@ public class CameraScript : MonoBehaviour
 
         Debug.LogWarning(url);
 
-
-
+                
 
         //processing ended here 
         //Status.SetActive(false);
@@ -776,8 +773,26 @@ public class CameraScript : MonoBehaviour
         videoPlayer.playOnAwake = false;
         audioSource.playOnAwake = false;
         videoPlayer.skipOnDrop = true;
-        
+        Debug.Log("vidBuild: " + vidBuild + loopCount);
+        // vidBuild = true;
+        if(vidBuild == true){
+            var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            Plane.transform.localScale = new Vector3(600.0f, 600.0f, 600.0f);
+            Plane.transform.Rotate(0.0f, 0.0f, -180.0f, Space.World);
 
+
+            GameObject plane = GameObject.Find("Plane");
+            plane.GetComponent<Renderer>().material = project_material;
+            Debug.Log("targettext: " + videoPlayer.targetTexture);
+            Debug.Log("targetmat: " + plane.GetComponent<Renderer>().material);
+            plane.GetComponent<Renderer>().material.mainTexture = videoPlayer.targetTexture;
+            plane.name = "object";
+        }
+        
+        GameObject objPlane = GameObject.Find("object");
+        videoPlayer = objPlane.AddComponent<VideoPlayer>();
+        // vidPl = videoPlayer;
+        // objPlane.transform.SetParent(videoPlayer.transform);
         // Video clip from Url
         //https://answers.unity.com/questions/1370621/using-videoplayer-to-stream-a-video-from-a-website.html
         //videoPlayer.source = VideoSource.Url;
@@ -793,6 +808,14 @@ public class CameraScript : MonoBehaviour
         videoPlayer.SetTargetAudioSource(0, audioSource);
         //renderVideoOptions(videoPlayer);
         videoPlayer.Prepare();
+        // var renderer = GetComponent<Renderer>();
+        // renderer.material.mainTexture = videoPlayer.targetTexture;
+        Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
+        if (vidBuild == true){
+            gameObj.onClick.Invoke();
+            vidBuild = false;
+        } 
+        
     }
 
     
@@ -816,6 +839,9 @@ public class CameraScript : MonoBehaviour
         cameraInitialized = true;
         // Destroy(loadedObj);
         // loadedObj = GameObject.Find("object");
+        VideoPlayer vidPl=null;
+        if(GameObject.Find("object").GetComponent<VideoPlayer>()!=null)
+            vidPl = GameObject.Find("object").GetComponent<VideoPlayer>();
         Destroy(loadedObj);
         loadedObj = GameObject.Find("object");
         Destroy(loadedObj);
@@ -829,12 +855,14 @@ public class CameraScript : MonoBehaviour
         }
         if(Directory.Exists("./Assets/object"))                      //delete object directory
             Directory.Delete("./Assets/object", true);
-
-        // while(GameObject.Find("object")) Destroy(loadedObj);
-
+        // videoPlayer = vidPl;
+        loopCount += 1;
         draw = false;
         zipBuild = true;
         imgBuild = true;
+        vidBuild = true;
+        Debug.Log("closing " + vidBuild + loopCount);
+        vidBuild = true;
         plainBuild = true;
         // string filePath2 = Directory.GetFiles("./Assets", "*.obj")[1];
         // GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("12221_Cat_v1_l3");
@@ -895,7 +923,6 @@ public class CameraScript : MonoBehaviour
     
 
     private bool isIP( string url ){ 
-        // url = url.Split('?')[0];                    //MAYBE MAKE THIS ?dl=
         var checkURL = url.Replace("http://", "");
         checkURL = checkURL.Replace("https://", "");
         if(checkURL.Contains("mjpg") || checkURL.Contains("mpg")) return true;
