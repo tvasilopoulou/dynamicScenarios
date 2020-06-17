@@ -217,7 +217,10 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             Vector3 scaleChange = new Vector3(10.0f, 10.0f, 10.0f);
             loadedObj.transform.localScale = scaleChange;
             if(flag == 0){
-                loadedObj.transform.localScale += 4 * scaleChange;
+                loadedObj.transform.localScale += 4 * scaleChange;                  //differentiate perhaps on video/image
+                // if(vidBuild == true){
+                //     loadedObj.transform.localScale += 2 * scaleChange;
+                // }
             }
 
         }

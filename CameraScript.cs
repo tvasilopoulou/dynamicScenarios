@@ -28,6 +28,7 @@ public class CameraScript : MonoBehaviour
     public int loopCount;
     //public RawImage rawImage;
     public UnityEngine.UI.Image image;
+    public Plane pl;
     //public GameObject uDTManager;
     public Canvas canvas;
     public Material init_material;
@@ -54,6 +55,7 @@ public class CameraScript : MonoBehaviour
     private float limit_zoom = 2.0f;
     private float zoom_in = 1, zoom_out = 1;
     public Slider zoom;
+    public float zoomPosition;
 
     public GameObject loadedObj;
     public MemoryStream ms;
@@ -107,6 +109,7 @@ public class CameraScript : MonoBehaviour
         scan_area.gameObject.SetActive(true);
         ProcessingMsg.SetActive(false);
         zoom.gameObject.SetActive(false);
+        zoomPosition = zoom.gameObject.GetComponent<Slider>().value;
 
         rotCount = 0;
         loopCount = 0;
@@ -115,9 +118,6 @@ public class CameraScript : MonoBehaviour
         imgBuild = true;
         vidBuild = true;
         plainBuild = true;
-        // plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        // plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
-        // plane.transform.Rotate(90.0f, 0.0f, 0.0f, Space.World);
         var vuforia = VuforiaARController.Instance;
         vuforia.RegisterVuforiaStartedCallback(OnVuforiaStarted);
         vuforia.RegisterOnPauseCallback(OnPaused);
@@ -172,6 +172,7 @@ public class CameraScript : MonoBehaviour
         barCodeReader = new BarcodeReader(reader, null, (src)=> {return new HybridBinarizer(src); });
         barCodeReader.ResultFound += (obj) => {
         Debug.Log("OnResultScanned");
+
             if (obj != null)
 			{
                 string url = obj.Text;
@@ -448,7 +449,7 @@ public class CameraScript : MonoBehaviour
             bool isIPCamera = isIP(url);
             // Debug.Log(content_info);
             Debug.Log("isImage = " + isImage);
-            Debug.Log("isVideo = " + isVideo + loopCount);
+            Debug.Log("isVideo = " + isVideo);
             Debug.Log("is3DObj = " + is3DObj);
             Debug.Log("isZip = " + isZip);
             Debug.Log("isIPCamera = " + isIPCamera);
@@ -485,8 +486,11 @@ public class CameraScript : MonoBehaviour
                 Debug.Log("project material is: " + project_material);
                 plane.GetComponent<Renderer>().material = project_material;
                 plane.GetComponent<Renderer>().material.mainTexture = texture2D;
+                // Graphics graph = plane as Graphics;
+
                 plane.name = "object";
                 }
+                Debug.Log( "zoomslider : " + zoom.GetComponent<Slider>().value);
                 Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
                 if (imgBuild == true){
                     gameObj.onClick.Invoke();
@@ -495,6 +499,9 @@ public class CameraScript : MonoBehaviour
                 // plane.GetComponent<MeshRenderer>()=image;
                 closeButton.gameObject.SetActive(true);
                 zoom.gameObject.SetActive(true);
+                // GameObject temp = 
+                Debug.Log(zoom.GetComponent<Slider>().targetGraphic);
+
                 //fullscreen_button.gameObject.SetActive(true);
                 //exit_fullscreen_button.gameObject.SetActive(true);
                 ProcessingMsg.SetActive(false);
@@ -644,15 +651,11 @@ public class CameraScript : MonoBehaviour
                 Vector3 pos = new Vector3(450.0f,140.0f,0.0f);
                 loadedObj.transform.position += pos;
 
-                // Vector3 screenPoint = loadedObj.transform.position;
-                // Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPoint);
-                // loadedObj.transform.position = Vector3.MoveTowards(loadedObj.transform.position, worldPos, 0);
 
                 loadedObj.transform.Rotate(180.0f, 0.0f, 180.0f, Space.World);
                 Vector3 scaleChange = new Vector3(3.0f, 1.0f, 1.0f);
                 loadedObj.transform.localScale += scaleChange;
-                // Debug.Log(UDTEventHandler::flag);
-                // ProcessingMsg.SetActive(false);
+
                 Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
                 Debug.Log("hello4");
 
@@ -678,11 +681,6 @@ public class CameraScript : MonoBehaviour
                 url = "";
                 url = String.Copy(urlBackup);
                 Debug.Log("I am an ip: " + url);
-                // int flag = 0;
-                // if(flag==0){
-                //     System.Diagnostics.Process.Start(url);
-                //     flag=1;
-                // }
                 GetVideo(url);
 
             }
@@ -701,6 +699,25 @@ public class CameraScript : MonoBehaviour
             ///////////////
         }
     }
+
+
+    public void onImageZoomed(){
+        var zoomPlane = GameObject.Find("object");
+        if(zoomPlane!=null){
+            if(zoom.gameObject.GetComponent<Slider>().value > zoomPosition){
+                Debug.Log("zoomin");
+                zoomPlane.transform.localScale += new Vector3(10.0f, 10.0f, 10.0f);
+                zoomPosition = zoom.gameObject.GetComponent<Slider>().value;
+            }
+            else if (zoom.gameObject.GetComponent<Slider>().value < zoomPosition){
+                Debug.Log("zoomout");
+                zoomPlane.transform.localScale -= new Vector3(20.0f, 20.0f, 20.0f);
+                zoomPosition = zoom.gameObject.GetComponent<Slider>().value;
+            }
+        }
+    }
+
+
 
     public void VideoPrepareCompleted(VideoPlayer videoPlayer)
     {
@@ -754,7 +771,6 @@ public class CameraScript : MonoBehaviour
         videoPlayer.loopPointReached += VideoEndReached;
 
         Debug.LogWarning(url);
-
                 
 
         //processing ended here 
@@ -774,12 +790,10 @@ public class CameraScript : MonoBehaviour
         audioSource.playOnAwake = false;
         videoPlayer.skipOnDrop = true;
         Debug.Log("vidBuild: " + vidBuild + loopCount);
-        // vidBuild = true;
         if(vidBuild == true){
             var Plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            Plane.transform.localScale = new Vector3(600.0f, 600.0f, 600.0f);
+            Plane.transform.localScale = new Vector3(100.0f, 100.0f, 100.0f);
             Plane.transform.Rotate(0.0f, 0.0f, -180.0f, Space.World);
-
 
             GameObject plane = GameObject.Find("Plane");
             plane.GetComponent<Renderer>().material = project_material;
@@ -810,6 +824,9 @@ public class CameraScript : MonoBehaviour
         videoPlayer.Prepare();
         // var renderer = GetComponent<Renderer>();
         // renderer.material.mainTexture = videoPlayer.targetTexture;
+        pause_button.gameObject.SetActive(true);
+        play_button.gameObject.SetActive(true);
+        
         Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
         if (vidBuild == true){
             gameObj.onClick.Invoke();
@@ -837,8 +854,7 @@ public class CameraScript : MonoBehaviour
         scan_area.gameObject.SetActive(true);
         //when an object is present dont scan until close button is pressed
         cameraInitialized = true;
-        // Destroy(loadedObj);
-        // loadedObj = GameObject.Find("object");
+
         VideoPlayer vidPl=null;
         if(GameObject.Find("object").GetComponent<VideoPlayer>()!=null)
             vidPl = GameObject.Find("object").GetComponent<VideoPlayer>();
@@ -861,25 +877,12 @@ public class CameraScript : MonoBehaviour
         zipBuild = true;
         imgBuild = true;
         vidBuild = true;
-        Debug.Log("closing " + vidBuild + loopCount);
-        vidBuild = true;
         plainBuild = true;
-        // string filePath2 = Directory.GetFiles("./Assets", "*.obj")[1];
-        // GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("12221_Cat_v1_l3");
-        // foreach (GameObject target in gameObjects) {
-        //     GameObject.Destroy(target);
-        // }
-        // Debug.Log("Deleting " + filePath);
-        // Destroy(remObj);
-        // remObj = GameObject.Find(filePath2);
 
-        // Debug.Log("Deleting " + filePath2);
-        // Destroy(remObj);
-
+        if(vidBuild==false) vidBuild = true;
         var imageTarget = GameObject.Find("ImageTargetBehaviour");
-        // if(imageTarget == null){
-        
-        // }
+        // videoPlayer = vidPl.GetComponent<VideoPlayer>();
+        videoPlayer = GameObject.Find("Video Player").GetComponent<VideoPlayer>();
         StopCoroutine(GetFrame());
         ProcessingMsg.gameObject.SetActive(false);
         if (videoPlayer.isPlaying)
