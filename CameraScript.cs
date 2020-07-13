@@ -470,32 +470,45 @@ public class CameraScript : MonoBehaviour
                 Plane.transform.Rotate(0.0f, 0.0f, -180.0f, Space.World);
 
 
+               Debug.Log("we have an image!");
+                //the user see the object. no scanning needed
                 cameraInitialized = false;
-                Debug.Log(texDl.texture.width);
+
                 Sprite s =  Sprite.Create(texDl.texture, new Rect(0, 0, texDl.texture.width, texDl.texture.height), new Vector2(0, 0));
                 texture2D = texDl.texture;
-                
-                // image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
-                // image.sprite = s;
-                // Debug.Log("sprite: " + s);
-                // image.material = project_material;
-                // Vector3 trans = new Vector3(2000.0f, 2000.0f, 2000.0f);
-                // image.transform.position = trans;
+                image.GetComponent<RectTransform>().sizeDelta = new Vector2(texDl.texture.width, texDl.texture.height);
+                image.sprite = s;
 
+                image.material = init_material;
+                // image.material = project_material;
+                closeButton.gameObject.SetActive(true);
+                zoom.gameObject.SetActive(true);
+                //fullscreen_button.gameObject.SetActive(true);
+                //exit_fullscreen_button.gameObject.SetActive(true);
+                ProcessingMsg.SetActive(false);
+               
+               
+               
                 GameObject plane = GameObject.Find("Plane");
                 Debug.Log("project material is: " + project_material);
                 plane.GetComponent<Renderer>().material = project_material;
                 plane.GetComponent<Renderer>().material.mainTexture = texture2D;
-                // Graphics graph = plane as Graphics;
+                // // Graphics graph = plane as Graphics;
 
                 plane.name = "object";
                 }
-                Debug.Log( "zoomslider : " + zoom.GetComponent<Slider>().value);
+                // Debug.Log( "zoomslider : " + zoom.GetComponent<Slider>().value);
                 Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
                 if (imgBuild == true){
                     gameObj.onClick.Invoke();
                     imgBuild = false;
                 } 
+
+
+
+
+
+
                 // plane.GetComponent<MeshRenderer>()=image;
                 closeButton.gameObject.SetActive(true);
                 zoom.gameObject.SetActive(true);
@@ -802,7 +815,12 @@ public class CameraScript : MonoBehaviour
             plane.GetComponent<Renderer>().material.mainTexture = videoPlayer.targetTexture;
             plane.name = "object";
         }
-        
+        // image.material = project_material;
+
+        // GameObject tempObj = GameObject.Find("DisplayImage");
+        // tempObj.GetComponent<Renderer>().material = init_material;
+
+
         GameObject objPlane = GameObject.Find("object");
         videoPlayer = objPlane.AddComponent<VideoPlayer>();
         // vidPl = videoPlayer;
@@ -821,12 +839,12 @@ public class CameraScript : MonoBehaviour
         videoPlayer.EnableAudioTrack(0, true);
         videoPlayer.SetTargetAudioSource(0, audioSource);
         //renderVideoOptions(videoPlayer);
-        videoPlayer.Prepare();
+        // videoPlayer.Prepare();
         // var renderer = GetComponent<Renderer>();
         // renderer.material.mainTexture = videoPlayer.targetTexture;
         pause_button.gameObject.SetActive(true);
         play_button.gameObject.SetActive(true);
-        
+        videoPlayer.targetTexture = null;
         Button gameObj = GameObject.Find("BuildButton").GetComponent<Button>();
         if (vidBuild == true){
             gameObj.onClick.Invoke();
