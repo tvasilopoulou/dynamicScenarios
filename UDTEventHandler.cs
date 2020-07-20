@@ -100,17 +100,12 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
     public void OnFrameQualityChanged(ImageTargetBuilder.FrameQuality frameQuality)
     {
            
-           m_FrameQuality = frameQuality;
-    //     Debug.Log("Frame quality changed: " + frameQuality.ToString());
-    //     m_FrameQuality = frameQuality;
+        m_FrameQuality = frameQuality;
         if (m_FrameQuality == ImageTargetBuilder.FrameQuality.FRAME_QUALITY_LOW)
         {
             Debug.Log("Low camera image quality");
         }
-        // m_FrameQualityMeter = FindObjectOfType<FrameQualityMeter>();
-        // Debug.Log("OnFrameQualityChanged: "+m_FrameQualityMeter);
-        // Debug.Log("OnFrameQualityChanged: "+frameQuality);
-        // m_FrameQualityMeter.SetQuality(frameQuality, true);
+
     }
 
     /// <summary>
@@ -176,9 +171,7 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
             // generate a new target:
             Vector3 trans = new Vector3(2000.0f, 2000.0f, 2000.0f);
             loadedObj = GameObject.Find("object");              //zip stronger than object -> contains mtl
-            // closeButton = GameObject.Find("Close").GetComponent<Button>();
             m_TargetBuildingBehaviour.BuildNewTarget(targetName, ImageTargetTemplate.GetSize().x);
-            // closeButton.gameObject.SetActive(true);
             int flag = 0;
             if(File.Exists("object.obj")){
                 flag = 1;
@@ -193,7 +186,6 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
                 loadedObj.transform.Rotate(0.0f, -180.0f, 360.0f, Space.World);
             }
             else if(Directory.Exists("./Assets/object")) {
-            // if(Directory.Exists("./Assets/object")) {
                 loadedObj = null;
                 flag = 1;
                 Debug.Log("I have a file available.");
@@ -207,20 +199,28 @@ public class UDTEventHandler : MonoBehaviour, IUserDefinedTargetEventHandler
                 loadedObj.transform.Rotate(0.0f, -180.0f, 360.0f, Space.World);
 
             }
-
-            Vector3 pos = new Vector3(0.0f,-1254.0f,-840.0f);
-            loadedObj.transform.position = pos;
-
-            Debug.Log(loadedObj.transform.localScale);
-
-            loadedObj.transform.Rotate(180.0f, 0.0f, 360.0f, Space.World);
-            Vector3 scaleChange = new Vector3(10.0f, 10.0f, 10.0f);
-            loadedObj.transform.localScale = scaleChange;
             if(flag == 0){
-                loadedObj.transform.localScale += 4 * scaleChange;                  //differentiate perhaps on video/image
-                // if(vidBuild == true){
-                //     loadedObj.transform.localScale += 2 * scaleChange;
-                // }
+                Vector3 pos = new Vector3(400.0f,200.0f,0.0f);
+                loadedObj.transform.position = pos;
+                loadedObj.transform.localScale = new Vector3(500.0f, 500.0f, 500.0f);
+                Debug.Log(loadedObj.transform.localScale);
+
+                loadedObj.transform.Rotate(90.0f, 90.0f, 90.0f, Space.World);
+                Vector3 scaleChange = new Vector3(10.0f, 10.0f, 10.0f);
+                loadedObj.transform.localScale = scaleChange;
+                
+                loadedObj.transform.localScale += 2 * scaleChange;                  //differentiate perhaps on video/image
+
+            }
+            else if(flag == 1){
+                Vector3 pos = new Vector3(0.0f,0.0f,0.0f);
+                loadedObj.transform.position = pos;
+                loadedObj.transform.localScale += new Vector3(1000.0f, 1000.0f, 1000.0f);
+                Debug.Log(loadedObj.transform.localScale);
+
+                loadedObj.transform.Rotate(90.0f, 90.0f, 90.0f, Space.World);
+                // Vector3 scaleChange = new Vector3(10.0f, 10.0f, 10.0f);
+                // loadedObj.transform.localScale = scaleChange;
             }
 
         }
